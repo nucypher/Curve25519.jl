@@ -13,6 +13,8 @@ end
 
 
 #/// Returns 2 times the square of this field element.
+# FIXME: this should be multiplication for the scalars, addition for the curves.
+# Two different functions?
 square2(x) = let s = square(x)
     s + s
 end
