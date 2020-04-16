@@ -1,52 +1,37 @@
 #=
-/// The Ed25519 basepoint, in `CompressedEdwardsY` format.
-///
-/// This is the little-endian byte encoding of \\( 4/5 \pmod p \\),
-/// which is the \\(y\\)-coordinate of the Ed25519 basepoint.
-///
-/// The sign bit is 0 since the basepoint has \\(x\\) chosen to be positive.
+Ported from joined backend/serial/u64/constants.rs and constants.rs
+
+Precomputed constants.
 =#
-ED25519_BASEPOINT_COMPRESSED = CompressedEdwardsY(
-    from_bytes([0x58, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-    0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-    0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-    0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66]))
 
 
-# The X25519 basepoint, in `MontgomeryPoint` format.
-X25519_BASEPOINT = MontgomeryPoint(
-    from_bytes([0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]))
+# Edwards `2*d` value, equal to `2*(-121665/121666) mod (2^255-19)`.
+const EDWARDS_D2 = convert(
+    InternalScalar,
+    16295367250680780974490674513165176452449235426866156013048779062215315747161)
 
 
-# The Ristretto basepoint, in `CompressedRistretto` format.
-RISTRETTO_BASEPOINT_COMPRESSED = CompressedRistretto(
-    from_bytes([0xe2, 0xf2, 0xae, 0x0a, 0x6a, 0xbc, 0x4e, 0x71,
-    0xa8, 0x84, 0xa9, 0x61, 0xc5, 0x00, 0x51, 0x5f,
-    0x58, 0xe3, 0x0b, 0x6a, 0xa5, 0x82, 0xdd, 0x8d,
-    0xb6, 0xa6, 0x59, 0x45, 0xe0, 0x8d, 0x2d, 0x76]))
+# The Ed25519 basepoint, as an `EdwardsPoint`.
+const ED25519_BASEPOINT = EdwardsPoint(convert.(
+    InternalScalar, (
+        15112221349535400772501151409588531511454012693041857206046113283949847762202,
+        46316835694926478169428394003475163141307993866256225615783033603165251855960,
+        1,
+        46827403850823179245072216630277197565144205554125654976674165829533817101731,
+        ))...)
+
+
+# The Ristretto basepoint, as a `RistrettoPoint`.
+const RISTRETTO_BASEPOINT = RistrettoPoint(ED25519_BASEPOINT)
 
 
 #=
-/// The Ristretto basepoint, as a `RistrettoPoint`.
-///
-/// This is called `_POINT` to distinguish it from `_TABLE`, which
-/// provides fast scalar multiplication.
+BASEPOINT_ORDER` is the order of the Ristretto group and of the Ed25519 basepoint, i.e.,
+2^252 + 27742317777372353535851937790883648493.
 =#
-RISTRETTO_BASEPOINT_POINT = RistrettoPoint(ED25519_BASEPOINT_POINT)
+const BASEPOINT_ORDER = (one(BigInt) << 252) + 27742317777372353535851937790883648493
 
 
-#=
-/// `BASEPOINT_ORDER` is the order of the Ristretto group and of the Ed25519 basepoint, i.e.,
-/// $$
-/// \ell = 2^\{252\} + 27742317777372353535851937790883648493.
-/// $$
-=#
-BASEPOINT_ORDER = from_bytes([
-        0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58,
-        0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10,
-    ])
+
+base_point() = RISTRETTO_BASEPOINT
+curve_order() = BASEPOINT_ORDER
