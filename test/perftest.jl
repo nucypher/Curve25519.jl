@@ -1,19 +1,23 @@
 using DarkIntegers
-using Curve25519: base_point, curve_order, RistrettoPointT
+using Curve25519: base_point, curve_order, RistrettoPointCT, RistrettoScalarCT, RistrettoScalarVT
 using Curve25519
 using BenchmarkTools
+using ConstantTime
 
-b = base_point()
+const CT = ConstantTime
+
+
+b = base_point(RistrettoPointCT)
 b2 = b + b
 
-order = curve_order()
+order = curve_order(RistrettoScalarVT)
 
-z = zero(RistrettoPointT)
+z = zero(RistrettoPointCT)
 
-x1 = b * (order - 1)
-x2 = b2 * (order ÷ 2)
-x3 = b * order
-x4 = b * (order + 1)
+x1 = b * CT.wrap(order - 1)
+x2 = b2 * CT.wrap(order ÷ 2)
+x3 = b * CT.wrap(order)
+x4 = b * CT.wrap(order + 1)
 
 @assert x1 == x2
 @assert x1 + b == x3
@@ -21,5 +25,7 @@ x4 = b * (order + 1)
 @assert x4 == b
 
 
-display(@benchmark b * order)
+ct_order = CT.wrap(order)
+
+display(@benchmark b * ct_order)
 println()

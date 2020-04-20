@@ -15,39 +15,25 @@
 =#
 struct LookupTable{T}
     vals :: Array{T, 1}
-end
 
-
-function lookup_table_from(p::EdwardsPoint{T}) where T
-    points = Array{ProjectiveNielsPoint{T}}(undef, 8)
-    points[1] = to_projective_niels(p)
-    for j in 0:6
-        points[j+1+1] = to_projective_niels(to_extended(p + points[j+1]))
+    function LookupTable(p::EdwardsPoint{T}) where T
+        points = Array{ProjectiveNielsPoint{T}}(undef, 8)
+        points[1] = to_projective_niels(p)
+        for j in 0:6
+            points[j+1+1] = to_projective_niels(to_extended(p + points[j+1]))
+        end
+        new{ProjectiveNielsPoint{T}}(points)
     end
-    LookupTable{ProjectiveNielsPoint{T}}(points)
 end
 
 
 # Given \\(-8 \leq x \leq 8\\), return \\(xP\\) in constant time.
-function select(table::LookupTable{T}, x::Integer) where T
-    @assert x >= -8 && x <= 8
-
+function Base.getindex(table::LookupTable, x::Union{CT.Value, Integer})
+    @assert CT.unwrap(x) >= -8 && CT.unwrap(x) <= 8
     # Compute xabs = |x|
-    xmask = x >> 7;
+    xmask = x >> 7
     xabs = xor(x + xmask, xmask)
 
-    # Set t = 0 * P = identity
-    t = zero(T)
-    for j in 1:8
-        # Copy `points[j-1] == j*P` onto `t` in constant time if `|x| == j`.
-        c = ct_eq(xabs, j)
-        t = conditional_assign(t, table.vals[j], c)
-    end
-    # Now t == |x| * P.
-
-    neg_mask = isodd(xmask)
-    t = conditional_negate(t, neg_mask)
-    # Now t == x * P.
-
-    t
+    t = table.vals[xabs]
+    CT.select(isodd(xmask), -t, t)
 end

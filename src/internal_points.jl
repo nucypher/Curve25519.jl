@@ -94,6 +94,17 @@ struct ProjectiveNielsPoint{T}
 end
 
 
+function CT.select(
+        choice::CT.Choice, p::ProjectiveNielsPoint{T}, q::ProjectiveNielsPoint{T}) where T <: CT.Value
+    ProjectiveNielsPoint{T}(
+        CT.select(choice, p.Y_plus_X, q.Y_plus_X),
+        CT.select(choice, p.Y_minus_X, q.Y_minus_X),
+        CT.select(choice, p.Z, q.Z),
+        CT.select(choice, p.T2d, q.T2d)
+        )
+end
+
+
 Base.zero(::Type{ProjectiveNielsPoint{T}}) where T = ProjectiveNielsPoint{T}(one(T), one(T), one(T), zero(T))
 
 

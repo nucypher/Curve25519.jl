@@ -18,6 +18,19 @@ struct FieldElement51
 end
 
 
+function CT.select(choice::CT.Choice, p::CT.Value{FieldElement51}, q::CT.Value{FieldElement51})
+    pp = CT.unwrap(p)
+    qq = CT.unwrap(q)
+    CT.wrap(FieldElement51((
+        CT.unwrap(CT.select(choice, CT.wrap(pp.limbs[1]), CT.wrap(qq.limbs[1]))),
+        CT.unwrap(CT.select(choice, CT.wrap(pp.limbs[2]), CT.wrap(qq.limbs[2]))),
+        CT.unwrap(CT.select(choice, CT.wrap(pp.limbs[3]), CT.wrap(qq.limbs[3]))),
+        CT.unwrap(CT.select(choice, CT.wrap(pp.limbs[4]), CT.wrap(qq.limbs[4]))),
+        CT.unwrap(CT.select(choice, CT.wrap(pp.limbs[5]), CT.wrap(qq.limbs[5]))),
+        )))
+end
+
+
 Base.getindex(x::FieldElement51, i) = x.limbs[i]
 
 
@@ -206,4 +219,17 @@ function Base.convert(::Type{T}, x::FieldElement51) where T <: Integer
     xx = convert.(T, x.limbs)
     xx[1] + (xx[2] << 51) + (xx[3] << 102) + (xx[4] << 153) + (xx[5] << 204)
 end
+
+
+# Arithmetic operations on FieldElement51 are constant-time
+
+
+Base.:+(x::CT.Value{FieldElement51}, y::CT.Value{FieldElement51}) = CT.Value(CT.unwrap(x) + CT.unwrap(y))
+
+Base.:-(x::CT.Value{FieldElement51}) = CT.Value(-CT.unwrap(x))
+Base.:-(x::CT.Value{FieldElement51}, y::CT.Value{FieldElement51}) = CT.Value(CT.unwrap(x) - CT.unwrap(y))
+
+Base.:*(x::CT.Value{FieldElement51}, y::CT.Value{FieldElement51}) = CT.Value(CT.unwrap(x) * CT.unwrap(y))
+Base.:*(x::CT.Value{FieldElement51}, y::FieldElement51) = CT.Value(CT.unwrap(x) * y)
+
 

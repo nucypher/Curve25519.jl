@@ -9,6 +9,10 @@ struct EdwardsPoint{T}
 end
 
 
+CT.wrap(p::EdwardsPoint{T}) where T =
+    EdwardsPoint(CT.wrap(p.X), CT.wrap(p.Y), CT.wrap(p.Z), CT.wrap(p.T_))
+
+
 Base.zero(::Type{EdwardsPoint{T}}) where T = EdwardsPoint{T}(zero(T), one(T), one(T), zero(T))
 
 
@@ -35,7 +39,7 @@ function Base.:*(point::EdwardsPoint{T}, scalar::Z) where {T, Z}
     # from backend/serial/scalar_mul/variable_base.rs
     # Perform constant-time, variable-base scalar multiplication.
     # Construct a lookup table of [P,2P,3P,4P,5P,6P,7P,8P]
-    lookup_table = lookup_table_from(point)
+    lookup_table = LookupTable(point)
     #=
     // Setting s = scalar, compute
     //
@@ -57,7 +61,7 @@ function Base.:*(point::EdwardsPoint{T}, scalar::Z) where {T, Z}
     # Unwrap first loop iteration to save computing 16*identity
     #let mut tmp2;
     tmp3 = zero(EdwardsPoint{T})
-    tmp1 = tmp3 + select(lookup_table, scalar_digits[63+1])
+    tmp1 = tmp3 + lookup_table[scalar_digits[63+1]]
     # Now tmp1 = s_63*P in P1xP1 coords
     for i in 62:-1:0
         tmp2 = to_projective(tmp1) # tmp2 =    (prev) in P2 coords
@@ -69,7 +73,7 @@ function Base.:*(point::EdwardsPoint{T}, scalar::Z) where {T, Z}
         tmp2 = to_projective(tmp1) # tmp2 =  8*(prev) in P2 coords
         tmp1 = double(tmp2)        # tmp1 = 16*(prev) in P1xP1 coords
         tmp3 = to_extended(tmp1)   # tmp3 = 16*(prev) in P3 coords
-        tmp1 = tmp3 + select(lookup_table, scalar_digits[i+1])
+        tmp1 = tmp3 + lookup_table[scalar_digits[i+1]]
         # Now tmp1 = s_i*P + 16*(prev) in P1xP1 coords
     end
     to_extended(tmp1)
