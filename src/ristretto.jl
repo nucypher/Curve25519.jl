@@ -16,6 +16,12 @@ Base.:+(p::RistrettoPoint{T}, q::RistrettoPoint{T}) where T = RistrettoPoint{T}(
 
 
 Base.:*(p::RistrettoPoint{T}, s::Z) where {T, Z} = RistrettoPoint{T}(p.ep * s)
+Base.:-(p::RistrettoPoint{T}, q::RistrettoPoint{T}) where T = RistrettoPoint{T}(p.ep - q.ep)
+
+
+Base.:-(p::RistrettoPoint{T}) where T = RistrettoPoint{T}(-p.ep)
+
+
 
 
 function Base.:(==)(p::RistrettoPoint{T}, q::RistrettoPoint{T}) where T

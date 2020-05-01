@@ -32,7 +32,10 @@ double(p::EdwardsPoint{T}) where T = to_extended(double(to_projective(p)))
 Base.:+(p::EdwardsPoint{T}, q::EdwardsPoint{T}) where T = to_extended(p + to_projective_niels(q))
 
 
-Base.:-(p::EdwardsPoint{T}) where T = EdwardsPoint{T}(-p.X, p.Y, p.Z, -p.T)
+Base.:-(p::EdwardsPoint{T}, q::EdwardsPoint{T}) where T = to_extended(p + to_projective_niels(-q))
+
+
+Base.:-(p::EdwardsPoint{T}) where T = EdwardsPoint{T}(-p.X, p.Y, p.Z, -p.T_)
 
 
 function Base.:*(point::EdwardsPoint{T}, scalar::Z) where {T, Z}
