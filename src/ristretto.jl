@@ -1,4 +1,7 @@
-struct RistrettoPoint{T}
+struct RistrettoCurve <: DarkCurves.EllipticCurve end
+
+
+struct RistrettoPoint{T} <: DarkCurves.EllipticCurvePoint{RistrettoCurve, T}
     ep :: EdwardsPoint{T}
 
     RistrettoPoint(ep::EdwardsPoint{T}) where T = new{T}(ep)
@@ -15,13 +18,13 @@ Base.zero(::Type{RistrettoPoint{T}}) where T = RistrettoPoint{T}(zero(EdwardsPoi
 Base.:+(p::RistrettoPoint{T}, q::RistrettoPoint{T}) where T = RistrettoPoint{T}(p.ep + q.ep)
 
 
-Base.:*(p::RistrettoPoint{T}, s::Z) where {T, Z} = RistrettoPoint{T}(p.ep * s)
 Base.:-(p::RistrettoPoint{T}, q::RistrettoPoint{T}) where T = RistrettoPoint{T}(p.ep - q.ep)
 
 
 Base.:-(p::RistrettoPoint{T}) where T = RistrettoPoint{T}(-p.ep)
 
 
+Base.:*(p::RistrettoPoint{T}, s::Z) where {T, Z<:Union{MgModUInt, ModUInt}} = RistrettoPoint{T}(p.ep * s)
 
 
 function Base.:(==)(p::RistrettoPoint{T}, q::RistrettoPoint{T}) where T

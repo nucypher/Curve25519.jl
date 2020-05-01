@@ -1,6 +1,7 @@
 module Curve25519
 
 using DarkIntegers
+using DarkCurves
 using ConstantTime
 
 const CT = ConstantTime
