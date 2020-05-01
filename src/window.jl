@@ -28,12 +28,12 @@ end
 
 
 # Given \\(-8 \leq x \leq 8\\), return \\(xP\\) in constant time.
-function Base.getindex(table::LookupTable, x::Union{CT.Value, Integer})
+function Base.getindex(table::LookupTable{T}, x::Union{CT.Value, Integer}) where T
     @assert CT.unwrap(x) >= -8 && CT.unwrap(x) <= 8
     # Compute xabs = |x|
     xmask = x >> 7
     xabs = xor(x + xmask, xmask)
 
-    t = table.vals[xabs]
+    t = get(table.vals, xabs, zero(T))
     CT.select(isodd(xmask), -t, t)
 end

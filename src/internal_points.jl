@@ -86,7 +86,7 @@ end
 A pre-computed point on the \\( \mathbb P\^3 \\) model for the
 curve, represented as \\((Y+X, Y-X, Z, 2dXY)\\) in "Niels coordinates".
 =#
-struct ProjectiveNielsPoint{T}
+struct ProjectiveNielsPoint{T} <: CT.Selectable
     Y_plus_X :: T
     Y_minus_X :: T
     Z :: T
