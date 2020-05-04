@@ -41,7 +41,7 @@ base_point(::Type{RistrettoPointVT}) = RISTRETTO_BASEPOINT
 base_point(::Type{RistrettoPointCT}) = CT.wrap(RISTRETTO_BASEPOINT)
 
 
-curve_order(::Type{RistrettoScalarVT}) = convert(RistrettoScalarVT, BASEPOINT_ORDER)
-curve_order(::Type{RistrettoScalarCT}) = CT.wrap(curve_order(RistrettoScalarVT))
+DarkCurves.curve_order(::Type{RistrettoScalarVT}) = convert(RistrettoScalarVT, BASEPOINT_ORDER)
+DarkCurves.curve_order(::Type{RistrettoScalarCT}) = CT.wrap(curve_order(RistrettoScalarVT))
 
 end
