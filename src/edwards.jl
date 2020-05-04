@@ -22,7 +22,7 @@ end
 
 
 function to_projective(p::EdwardsPoint{T}) where T
-    IntProjectivePoint{T}(p.X, p.Y, p.Z)
+    ProjectivePoint{T}(p.X, p.Y, p.Z)
 end
 
 
@@ -42,7 +42,7 @@ function Base.:*(point::EdwardsPoint{T}, scalar::Z) where {T, Z}
     # from backend/serial/scalar_mul/variable_base.rs
     # Perform constant-time, variable-base scalar multiplication.
     # Construct a lookup table of [P,2P,3P,4P,5P,6P,7P,8P]
-    lookup_table = LookupTable(point)
+    lookup_table = LookupTable{ProjectiveNielsPoint{T}}(point)
     #=
     // Setting s = scalar, compute
     //
@@ -82,3 +82,21 @@ function Base.:*(point::EdwardsPoint{T}, scalar::Z) where {T, Z}
     to_extended(tmp1)
 end
 
+
+function mul_by_pow_2(p::EdwardsPoint{T}, k::Int) where T
+    s = to_projective(p)
+    for _ in 0:k-2
+        s = to_projective(double(s))
+    end
+    # Unroll last iteration so we can go directly to_extended()
+    to_extended(double(s))
+end
+
+
+function to_affine_niels(p::EdwardsPoint{T}) where T
+    recip = inv(p.Z)
+    x = p.X * recip
+    y = p.Y * recip
+    xy2d = (x * y) * EDWARDS_D2
+    AffineNielsPoint{T}(y + x, y - x, xy2d)
+end

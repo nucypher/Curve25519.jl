@@ -18,7 +18,7 @@ struct FieldElement51
 end
 
 
-function CT.select(choice::CT.Choice, p::CT.Value{FieldElement51}, q::CT.Value{FieldElement51})
+@inline function CT.select(choice::CT.Choice, p::CT.Value{FieldElement51}, q::CT.Value{FieldElement51})
     pp = CT.unwrap(p)
     qq = CT.unwrap(q)
     CT.wrap(FieldElement51((
@@ -31,20 +31,20 @@ function CT.select(choice::CT.Choice, p::CT.Value{FieldElement51}, q::CT.Value{F
 end
 
 
-Base.getindex(x::FieldElement51, i) = x.limbs[i]
+@inline Base.getindex(x::FieldElement51, i) = x.limbs[i]
 
 
-Base.zero(::Type{FieldElement51}) = FieldElement51((0, 0, 0, 0, 0))
+@inline Base.zero(::Type{FieldElement51}) = FieldElement51((0, 0, 0, 0, 0))
 
 
-Base.one(::Type{FieldElement51}) = FieldElement51((1, 0, 0, 0, 0))
+@inline Base.one(::Type{FieldElement51}) = FieldElement51((1, 0, 0, 0, 0))
 
 
-Base.:+(x::FieldElement51, y::FieldElement51) =
+@inline Base.:+(x::FieldElement51, y::FieldElement51) =
     FieldElement51((x[1] + y[1], x[2] + y[2], x[3] + y[3], x[4] + y[4], x[5] + y[5]))
 
 
-function Base.:-(x::FieldElement51, y::FieldElement51)
+@inline function Base.:-(x::FieldElement51, y::FieldElement51)
     # Assuming that each limb is at most 54 bits in length,
     # and adding a corresponding multiple of the modulus before subtraction.
     weak_reduce(FieldElement51((
@@ -57,7 +57,7 @@ function Base.:-(x::FieldElement51, y::FieldElement51)
 end
 
 
-function Base.:-(x::FieldElement51)
+@inline function Base.:-(x::FieldElement51)
     # See the comment in the binary `-` method
     weak_reduce(FieldElement51((
         0x007ffffffffffed0 - x[1],
@@ -70,7 +70,7 @@ end
 
 
 # Given 64-bit input limbs, reduce to enforce the bound 2^(51 + epsilon).
-function weak_reduce(x::FieldElement51)
+@inline function weak_reduce(x::FieldElement51)
     #=
     Since the input limbs are bounded by 2^64, the biggest
     carry-out is bounded by 2^13.
@@ -106,7 +106,7 @@ function weak_reduce(x::FieldElement51)
 end
 
 
-function Base.:*(x::FieldElement51, y::FieldElement51)
+@inline function Base.:*(x::FieldElement51, y::FieldElement51)
 
     # Alias self, _rhs for more readable formulas
     a = x
@@ -203,6 +203,174 @@ function Base.:*(x::FieldElement51, y::FieldElement51)
 
     # Now out[i] < 2^(51 + epsilon) for all i.
     FieldElement51((out0, out1, out2, out3, out4))
+end
+
+
+#/// Given `k > 0`, return `self^(2^k)`.
+function pow2k(x::FieldElement51, k::Int)
+
+    #/// Multiply two 64-bit integers with 128 bits of output.
+    a = x
+
+    a0 = a[1]
+    a1 = a[2]
+    a2 = a[3]
+    a3 = a[4]
+    a4 = a[5]
+
+    for i in 1:k
+        #=
+        // Precondition: assume input limbs a[i] are bounded as
+        //
+        // a[i] < 2^(51 + b)
+        //
+        // where b is a real parameter measuring the "bit excess" of the limbs.
+
+        // Precomputation: 64-bit multiply by 19.
+        //
+        // This fits into a u64 whenever 51 + b + lg(19) < 64.
+        //
+        // Since 51 + b + lg(19) < 51 + 4.25 + b
+        //                       = 55.25 + b,
+        // this fits if b < 8.75.
+        =#
+        a3_19 = 19 * a[3+1]
+        a4_19 = 19 * a[4+1]
+
+        #=
+        // Multiply to get 128-bit coefficients of output.
+        //
+        // The 128-bit multiplications by 2 turn into 1 slr + 1 slrd each,
+        // which doesn't seem any better or worse than doing them as precomputations
+        // on the 64-bit inputs.
+        =#
+        c0 = widemul(a[0+1], a[0+1]) + 2 * (widemul(a[1+1], a4_19) + widemul(a[2+1], a3_19))
+        c1 = widemul(a[3+1], a3_19) + 2 * (widemul(a[0+1], a[1+1]) + widemul(a[2+1], a4_19))
+        c2 = widemul(a[1+1], a[1+1]) + 2 * (widemul(a[0+1], a[2+1]) + widemul(a[4+1], a3_19))
+        c3 = widemul(a[4+1], a4_19) + 2 * (widemul(a[0+1], a[3+1]) + widemul(a[1+1], a[2+1]))
+        c4 = widemul(a[2+1], a[2+1]) + 2 * (widemul(a[0+1], a[4+1]) + widemul(a[1+1], a[3+1]))
+
+        #=
+        // Same bound as in multiply:
+        //    c[i] < 2^(102 + 2*b) * (1+i + (4-i)*19)
+        //         < 2^(102 + lg(1 + 4*19) + 2*b)
+        //         < 2^(108.27 + 2*b)
+        //
+        // The carry (c[i] >> 51) fits into a u64 when
+        //    108.27 + 2*b - 51 < 64
+        //    2*b < 6.73
+        //    b < 3.365.
+        //
+        // So we require b < 3 to ensure this fits.
+        debug_assert!(a[0] < (1 << 54));
+        debug_assert!(a[1] < (1 << 54));
+        debug_assert!(a[2] < (1 << 54));
+        debug_assert!(a[3] < (1 << 54));
+        debug_assert!(a[4] < (1 << 54));
+        =#
+
+        #// Casting to u64 and back tells the compiler that the carry is bounded by 2^64, so
+        #// that the addition is a u128 + u64 rather than u128 + u128.
+        c1 += (c0 >> 51) % UInt64
+        a0 = (c0 % UInt64) & LOW_51_BIT_MASK
+
+        c2 += (c1 >> 51) % UInt64
+        a1 = (c1 % UInt64) & LOW_51_BIT_MASK
+
+        c3 += (c2 >> 51) % UInt64
+        a2 = (c2 % UInt64) & LOW_51_BIT_MASK
+
+        c4 += (c3 >> 51) % UInt64
+        a3 = (c3 % UInt64)
+
+        carry = (c4 >> 51) % UInt64
+        a4 = (c4 % UInt64) & LOW_51_BIT_MASK
+
+        #=
+        // To see that this does not overflow, we need a[0] + carry * 19 < 2^64.
+        //
+        // c4 < a2^2 + 2*a0*a4 + 2*a1*a3 + (carry from c3)
+        //    < 2^(102 + 2*b + lg(5)) + 2^64.
+        //
+        // When b < 3 we get
+        //
+        // c4 < 2^110.33  so that carry < 2^59.33
+        //
+        // so that
+        //
+        // a[0] + carry * 19 < 2^51 + 19 * 2^59.33 < 2^63.58
+        //
+        // and there is no overflow.
+        =#
+        a0 = a0 + carry * 19
+
+        #// Now a[1] < 2^51 + 2^(64 -51) = 2^51 + 2^13 < 2^(51 + epsilon).
+        a1 += a0 >> 51
+        a0 &= LOW_51_BIT_MASK
+
+        #// Now all a[i] < 2^(51 + epsilon) and a = self^(2^k).
+    end
+
+    FieldElement51((a0, a1, a2, a3, a4))
+end
+
+
+# Compute (self^(2^250-1), self^11), used as a helper function
+# within invert() and pow22523().
+function pow22501(x::T) where T
+    #=
+    // Instead of managing which temporary variables are used
+    // for what, we define as many as we need and leave stack
+    // allocation to the compiler
+    //
+    // Each temporary variable t_i is of the form (self)^e_i.
+    // Squaring t_i corresponds to multiplying e_i by 2,
+    // so the pow2k function shifts e_i left by k places.
+    // Multiplying t_i and t_j corresponds to adding e_i + e_j.
+    //
+    // Temporary t_i                      Nonzero bits of e_i
+    //
+    =#
+    t0  = square(x)           # 1         e_0 = 2^1
+    t1  = square(square(t0))    # 3         e_1 = 2^3
+    t2  = x * t1              # 3,0       e_2 = 2^3 + 2^0
+    t3  = t0 * t2               # 3,1,0
+    t4  = square(t3)             # 4,2,1
+    t5  = t2 * t4               # 4,3,2,1,0
+    t6  = pow2k(t5, 5)             # 9,8,7,6,5
+    t7  = t6 * t5               # 9,8,7,6,5,4,3,2,1,0
+    t8  = pow2k(t7, 10)            # 19..10
+    t9  = t8 * t7               # 19..0
+    t10 = pow2k(t9, 20)            # 39..20
+    t11 = t10 * t9              # 39..0
+    t12 = pow2k(t11, 10)           # 49..10
+    t13 = t12 * t7              # 49..0
+    t14 = pow2k(t13, 50)           # 99..50
+    t15 = t14 * t13             # 99..0
+    t16 = pow2k(t15, 100)          # 199..100
+    t17 = t16 * t15             # 199..0
+    t18 = pow2k(t17, 50)           # 249..50
+    t19 = t18 * t13             # 249..0
+
+    (t19, t3)
+end
+
+
+#=
+/// Given a nonzero field element, compute its inverse.
+///
+/// The inverse is computed as self^(p-2), since
+/// x^(p-2)x = x^(p-1) = 1 (mod p).
+///
+/// This function returns zero on input zero.
+=#
+function Base.inv(x::FieldElement51)
+    # The bits of p-2 = 2^255 -19 -2 are 11010111111...11.
+    (t19, t3) = pow22501(x)   # t19: 249..0 ; t3: 3,1,0
+    t20 = pow2k(t19, 5)         # 254..5
+    t21 = t20 * t3              # 254..5,3,1,0
+
+    t21
 end
 
 

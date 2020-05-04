@@ -3,11 +3,11 @@ Ported from backend/serial/curve_models/mod.rs
 =#
 
 
-square(x) = x * x
+@inline square(x) = x * x
 
 
 # Returns 2 times the square of this field element.
-square2(x) = let s = square(x)
+@inline square2(x) = let s = square(x)
     s + s
 end
 
@@ -19,11 +19,11 @@ struct ProjectivePoint{T}
 end
 
 
-Base.zero(::Type{ProjectivePoint{T}}) where T = ProjectivePoint{T}(zero(T), one(T), one(T))
+@inline Base.zero(::Type{ProjectivePoint{T}}) where T = ProjectivePoint{T}(zero(T), one(T), one(T))
 
 
 # Double this point: return self + self
-function double(p::ProjectivePoint{T}) where T
+@inline function double(p::ProjectivePoint{T}) where T
     XX          = square(p.X)
     YY          = square(p.Y)
     ZZ2         = square2(p.Z)
@@ -42,7 +42,7 @@ Convert this point from the \\( \mathbb P\^2 \\) model to the
 
 This costs \\(3 \mathrm M + 1 \mathrm S\\).
 =#
-function to_extended(p::ProjectivePoint{T}) where T
+@inline function to_extended(p::ProjectivePoint{T}) where T
     EdwardsPoint{T}(p.X * p.Z, p.Y * p.Z, square(p.Z), p.X * p.Y)
 end
 
@@ -66,7 +66,7 @@ Convert this point from the
 
 This costs \\(3 \mathrm M \\).
 =#
-function to_projective(p::CompletedPoint{T}) where T
+@inline function to_projective(p::CompletedPoint{T}) where T
     ProjectivePoint(p.X * p.T_, p.Y * p.Z, p.Z * p.T_)
 end
 
@@ -77,7 +77,7 @@ Convert this point from the
 
 This costs \\(4 \mathrm M \\).
 =#
-function to_extended(p::CompletedPoint{T}) where T
+@inline function to_extended(p::CompletedPoint{T}) where T
     EdwardsPoint{T}(p.X * p.T_, p.Y * p.Z, p.Z * p.T_, p.X * p.Y)
 end
 
@@ -94,7 +94,7 @@ struct ProjectiveNielsPoint{T} <: CT.Selectable
 end
 
 
-function CT.select(
+@inline function CT.select(
         choice::CT.Choice, p::ProjectiveNielsPoint{T}, q::ProjectiveNielsPoint{T}) where T <: CT.Value
     ProjectiveNielsPoint{T}(
         CT.select(choice, p.Y_plus_X, q.Y_plus_X),
@@ -105,15 +105,15 @@ function CT.select(
 end
 
 
-Base.zero(::Type{ProjectiveNielsPoint{T}}) where T = ProjectiveNielsPoint{T}(one(T), one(T), one(T), zero(T))
+@inline Base.zero(::Type{ProjectiveNielsPoint{T}}) where T = ProjectiveNielsPoint{T}(one(T), one(T), one(T), zero(T))
 
 
-function Base.:-(p::ProjectiveNielsPoint{T}) where T
+@inline function Base.:-(p::ProjectiveNielsPoint{T}) where T
     ProjectiveNielsPoint{T}(p.Y_minus_X, p.Y_plus_X, p.Z, -p.T2d)
 end
 
 
-function Base.:+(self::EdwardsPoint{T}, other::ProjectiveNielsPoint{T}) where T
+@inline function Base.:+(self::EdwardsPoint{T}, other::ProjectiveNielsPoint{T}) where T
     Y_plus_X  = self.Y + self.X
     Y_minus_X = self.Y - self.X
     PP = Y_plus_X  * other.Y_plus_X
@@ -123,4 +123,31 @@ function Base.:+(self::EdwardsPoint{T}, other::ProjectiveNielsPoint{T}) where T
     ZZ2  = ZZ + ZZ
 
     CompletedPoint{T}(PP - MM, PP + MM, ZZ2 + TT2d, ZZ2 - TT2d)
+end
+
+
+struct AffineNielsPoint{T}
+    y_plus_x :: T
+    y_minus_x :: T
+    xy2d :: T
+end
+
+
+@inline Base.zero(::Type{AffineNielsPoint{T}}) where T = AffineNielsPoint{T}(one(T), one(T), zero(T))
+
+
+function Base.:+(p::EdwardsPoint{T}, q::AffineNielsPoint{T}) where T
+    Y_plus_X  = p.Y + p.X
+    Y_minus_X = p.Y - p.X
+    PP        = Y_plus_X  * q.y_plus_x
+    MM        = Y_minus_X * q.y_minus_x
+    Txy2d     = p.T_ * q.xy2d
+    Z2        = p.Z + p.Z
+
+    CompletedPoint{T}(PP - MM, PP + MM, Z2 + Txy2d, Z2 - Txy2d)
+end
+
+
+@inline function Base.:-(p::AffineNielsPoint{T}) where T
+    AffineNielsPoint{T}(p.y_minus_x, p.y_plus_x, -p.xy2d)
 end

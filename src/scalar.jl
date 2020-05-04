@@ -12,7 +12,8 @@ top_half(x::Union{CT.Value{UInt8}, UInt8}) = (x >> 4) & 0xf
 =#
 function to_radix_16(x::T) where T
     # @assert num_bits(CT.unwrap(x)) <= 255
-    output = zeros(typeof(signed(x % UInt8)), 64)
+
+    output = zeros(Int8, 64)
 
     # TODO: can be sped up
     ubytes = [(x >> ((i-1) * 8)) % UInt8 for i in 1:32]
