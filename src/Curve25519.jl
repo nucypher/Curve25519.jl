@@ -3,6 +3,7 @@ module Curve25519
 using DarkIntegers
 using DarkCurves
 using ConstantTime
+using Random
 
 const CT = ConstantTime
 
@@ -36,12 +37,20 @@ Base.:>>(x::RistrettoScalarCT, s) = CT.wrap(CT.unwrap(x) >> s)
 Base.rem(x::RistrettoScalarCT, tp::Type) = CT.wrap(CT.unwrap(x) % tp)
 
 
-
 base_point(::Type{RistrettoPointVT}) = RISTRETTO_BASEPOINT
 base_point(::Type{RistrettoPointCT}) = CT.wrap(RISTRETTO_BASEPOINT)
 
 
 DarkCurves.curve_order(::Type{RistrettoScalarVT}) = convert(RistrettoScalarVT, BASEPOINT_ORDER)
 DarkCurves.curve_order(::Type{RistrettoScalarCT}) = CT.wrap(curve_order(RistrettoScalarVT))
+
+
+const _BASE_POWERS_TABLE = RistrettoBasepointTable(RISTRETTO_BASEPOINT)
+
+
+function Base.rand(rng::AbstractRNG, ::Random.SamplerType{RistrettoPointVT})
+    _BASE_POWERS_TABLE * rand(rng, RistrettoScalarVT)
+end
+
 
 end
