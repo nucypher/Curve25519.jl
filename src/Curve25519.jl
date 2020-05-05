@@ -23,7 +23,7 @@ const RistrettoPointVT = RistrettoPoint{InternalScalar}
 const RistrettoPointCT = RistrettoPoint{CT.Value{InternalScalar}}
 
 
-const _ScalarType = MLUInt{2, UInt128}
+const _ScalarType = MLUInt{4, UInt64}
 const _SCALAR_MODULUS = convert(_ScalarType, BASEPOINT_ORDER)
 
 const RistrettoScalarVT = ModUInt{_ScalarType, _SCALAR_MODULUS}
