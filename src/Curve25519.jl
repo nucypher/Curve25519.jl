@@ -48,6 +48,9 @@ DarkCurves.curve_order(::Type{RistrettoScalarCT}) = CT.wrap(curve_order(Ristrett
 const _BASE_POWERS_TABLE = RistrettoBasepointTable(RISTRETTO_BASEPOINT)
 
 
+Random.Sampler(RNG::Type{<:AbstractRNG}, ::Type{RistrettoPointVT}, n::Union{Val{1}, Val{Inf}}) =
+    Random.SamplerType{RistrettoPointVT}()
+
 function Base.rand(rng::AbstractRNG, ::Random.SamplerType{RistrettoPointVT})
     _BASE_POWERS_TABLE * rand(rng, RistrettoScalarVT)
 end
