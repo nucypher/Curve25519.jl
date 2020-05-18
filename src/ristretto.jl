@@ -1,7 +1,7 @@
-struct RistrettoCurve <: DarkCurves.EllipticCurve end
+struct RistrettoCurveVT <: EllipticCurve end
 
 
-struct RistrettoPoint{T} <: DarkCurves.EllipticCurvePoint{RistrettoCurve, T}
+struct RistrettoPoint{T} <: DarkCurves.EllipticCurvePoint{RistrettoCurveVT}
     ep :: EdwardsPoint{T}
 
     RistrettoPoint(ep::EdwardsPoint{T}) where T = new{T}(ep)

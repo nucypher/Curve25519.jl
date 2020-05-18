@@ -18,35 +18,22 @@ include("window.jl")
 include("scalar.jl")
 include("constants.jl")
 
-
-const RistrettoPointVT = RistrettoPoint{InternalScalar}
-const RistrettoPointCT = RistrettoPoint{CT.Value{InternalScalar}}
-
+export RistrettoCurveVT
 
 const _ScalarType = MLUInt{4, UInt64}
 const _SCALAR_MODULUS = convert(_ScalarType, BASEPOINT_ORDER)
 
-const RistrettoScalarVT = ModUInt{_ScalarType, _SCALAR_MODULUS}
+DarkCurves.curve_point_type(::Type{RistrettoCurveVT}) = RistrettoPoint{InternalScalar}
+DarkCurves.curve_scalar_type(::Type{RistrettoCurveVT}) = ModUInt{_ScalarType, _SCALAR_MODULUS}
 
-# FIXME: this assumes that MgModUInt is constant time, which is not true.
-# For now we will have coarse control over constant-timeness, should be fixed
-# when DarkIntegers support constant time operations.
-const RistrettoScalarCT = CT.Value{RistrettoScalarVT}
-
-Base.:>>(x::RistrettoScalarCT, s) = CT.wrap(CT.unwrap(x) >> s)
-Base.rem(x::RistrettoScalarCT, tp::Type) = CT.wrap(CT.unwrap(x) % tp)
+Base.one(::Type{RistrettoPoint{InternalScalar}}) = RISTRETTO_BASEPOINT
 
 
-base_point(::Type{RistrettoPointVT}) = RISTRETTO_BASEPOINT
-base_point(::Type{RistrettoPointCT}) = CT.wrap(RISTRETTO_BASEPOINT)
+const RistrettoScalarVT = curve_scalar_type(RistrettoCurveVT)
+const RistrettoPointVT = curve_point_type(RistrettoCurveVT)
 
 
-DarkCurves.curve_order(::Type{RistrettoScalarVT}) = convert(RistrettoScalarVT, BASEPOINT_ORDER)
-DarkCurves.curve_order(::Type{RistrettoScalarCT}) = CT.wrap(curve_order(RistrettoScalarVT))
-
-
-const _BASE_POWERS_TABLE = RistrettoBasepointTable(RISTRETTO_BASEPOINT)
-
+const _BASE_POWERS_TABLE = RistrettoBasepointTable(one(RistrettoPointVT))
 
 Random.Sampler(RNG::Type{<:AbstractRNG}, ::Type{RistrettoPointVT}, n::Union{Val{1}, Val{Inf}}) =
     Random.SamplerType{RistrettoPointVT}()
