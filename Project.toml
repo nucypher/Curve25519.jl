@@ -10,6 +10,7 @@ ConstantTime = "adc38e39-84cc-4087-89ab-f4eae76b2d15"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]
+DarkCurves = "~0.2.0"
 DarkIntegers = "~0.1.4"
 Jute = "~0.2.5"
 julia = "^1.0.0"
