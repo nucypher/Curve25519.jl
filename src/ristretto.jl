@@ -13,6 +13,7 @@ CT.wrap(p::RistrettoPoint{T}) where T = RistrettoPoint(CT.wrap(p.ep))
 
 
 Base.zero(::Type{RistrettoPoint{T}}) where T = RistrettoPoint{T}(zero(EdwardsPoint{T}))
+Base.zero(::RistrettoPoint{T}) where T = zero(RistrettoPoint{T})
 
 
 Base.:+(p::RistrettoPoint{T}, q::RistrettoPoint{T}) where T = RistrettoPoint{T}(p.ep + q.ep)
